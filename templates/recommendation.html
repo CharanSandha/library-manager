@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Recommendation</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+  .fade {
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+
+.fade-out {
+  opacity: 0;
+}
+
+</style> 
+
+</head>
+<body>
+  <div class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+    <h2>Recommendations for you!</h2>
+
+   <div id="recommendation-container" class="fade">
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Author</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ book['title'] }}</td>
+        <td>{{ book['author'] }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>{{ book['title'] }}</h3>
+  <p>{{ book['author'] }}</p>
+</div>
+
+<form method="POST" action="{{ url_for('add_recommend_book', book_id=book['id']) }}">
+  <button type="submit" class="btn btn-primary">Add book to library</button>
+</form>
+
+<form id="recommend-another-form" method="POST" action="{{ url_for('recommend_another', book_id=book['id']) }}">
+  <button type="submit" class="btn btn-info">Recommend another book</button>
+</form>
+
+<form method="GET" action="{{ url_for('books_home') }}">
+  <button type="submit" class="btn btn-success">Go home</button>
+</form>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+  const recContainer = document.getElementById('recommendation-container');
+  const recForm = document.getElementById('recommend-another-form');
+
+  recForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    console.log("Fade out starting...");
+    recContainer.classList.add('fade-out');
+
+    setTimeout(() => {
+      console.log("Submitting form after fade");
+      recForm.submit();
+    }, 500);
+  });
+});
+</script>
+</body>
+</html>

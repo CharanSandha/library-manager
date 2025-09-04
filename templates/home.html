@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Library</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+  <style>
+    .favorite-btn i {
+    color: gray;
+    transition: color 0.2s ease;
+  }
+
+  .favorite-btn i.liked {
+    color: red;
+  }
+
+  .favorite-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+  }
+    .favorite-btn {
+      font-size: 1.5rem;
+      color: #ccc;
+      cursor: pointer;
+    }
+    .star {
+      font-size: 1.3rem;
+    }
+    .favorite-btn.liked {
+      color: #ff4d4d; /* Red color for filled heart */
+    }
+    .star-rating {
+      display: inline-flex;
+      gap: 3px;
+    }
+    .star-rating input[type="radio"] {
+      display: none;
+    }
+    .star-rating label i.fas.filled {
+      color: gold !important; /* Permanently gold */
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .star-rating label i.far {
+      color: #ccc;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    /* Optional hover effect */
+    .star-rating label:hover i,
+    .star-rating label:hover ~ label i {
+      color: gold;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
+    <a class="navbar-brand text-light" href="/">📚 My Library</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="/home">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="/wishlist">Wishlist</a></li>
+        <li class="nav-item"><a class="nav-link" href="/fav">Favorites</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Stats</a></li>
+        <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Page Content -->
+  <div class="container mt-4">
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+  <input type="text" id="bookSearch" placeholder="Search by title or author..." style="padding: 5px; width: 250px;">
+</div>
+  <div style = "margin-bottom: 30px;">
+    <h2>Your Library</h2>
+    
+     <form method="get" action="{{ url_for('books_home') }}">
+  <select name="status" onchange="this.form.submit()">
+    <option value="all" {% if current_filter == 'all' %}selected{% endif %}>All</option>
+    <option value="reading" {% if current_filter == 'reading' %}selected{% endif %}>Reading</option>
+    <option value="finished" {% if current_filter == 'finished' %}selected{% endif %}>Finished</option>
+    <option value="to-read" {% if current_filter == 'to-read' %}selected{% endif %}>Want to read</option>
+
+  </select>
+  <noscript><button type="submit">Filter</button></noscript>
+</form>
+
+
+    <!-- Bulk action form -->
+    <form method="POST" action="{{ url_for('process_selection') }}">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Select book</th>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Progress</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for book in books %}
+          <tr class="book-row" data-title="{{ book[1]|lower }}" data-author="{{ book[2]|lower }}">
+            <!-- Checkbox -->
+            <td><input type="checkbox" name="selected_books" value="{{ book[0] }}"></td>
+            <td style="text-align: left;">{{ book[1] }}</td>
+            <td>{{ book[2] }}</td>
+            <td>
+              <form action="{{ url_for('update_progress', book_id=book[0]) }}" method="POST" onsubmit="return validateProgress(this, '{{ book[5] }}')">
+  <input type="number"
+         name="new_progress"
+         value="{{ book[4] }}"
+         min="0"
+         max="{{ book[5] }}"
+         style="width: 50px; text-align: right;" />
+  / {{ book[5] }}
+  <button type="submit" class="btn btn-sm btn-secondary">Update</button>
+  <div class="text-danger" id="error-msg-{{ book[0] }}" style="font-size: 0.8rem;"></div>
+</form>
+
+<script>
+function validateProgress(form, maxPages) {
+  const input = form.new_progress;
+  const value = parseInt(input.value);
+  const errorDiv = document.getElementById("error-msg-" + form.action.split('/').pop());
+
+  if (isNaN(value) || value < 0 || value > maxPages) {
+    errorDiv.textContent = `Progress must be between 0 and ${maxPages}.`;
+    return false; // Prevent form submission
+  }
+
+  errorDiv.textContent = ''; // Clear error
+  return true;
+}
+</script>
+
+            </td>
+
+
+            <!-- Delete Button -->
+            <td style="padding-right: 5px;">
+              <form method="POST" action="{{ url_for('delete_book', book_id=book[0]) }}">
+                <button type="submit" title="Delete book">❌</button>
+              </form>
+            </td>
+
+            <!-- Favorite Heart & Star Rating -->
+            <td>
+              <!-- Favorite Heart -->
+           <form method="POST" action="{{ url_for('add_to_favs', book_id=book[0]) }}">
+  <button type="submit" class="favorite-btn" style="background: none; border: none;">
+    <i class="{{ 'fas liked' if book[0] in favorite_book_ids else 'far' }} fa-heart"
+       title="Toggle favorite"></i>
+  </button>
+</form>
+
+           <!-- Star Rating -->
+              <form method="POST" action="{{ url_for('rate_book', book_id=book[0]) }}" id="rating-form-{{ book[0] }}">
+                <div class="star-rating" data-book-id="{{ book[0] }}">
+                  {% for i in range(1, 6) %}
+                    <input type="radio"
+                           id="star{{ book[0] }}-{{ i }}"
+                           name="rating"
+                           value="{{ i }}"
+                           onclick="document.getElementById('rating-form-{{ book[0] }}').submit()"
+                           {% if book[6] == i %}checked{% endif %}>
+                    <label for="star{{ book[0] }}-{{ i }}" title = "Rate the book">
+                      <i class="fa-star star {% if book[6] is not none and i <= book[6] %}fas filled{% else %}far{% endif %}"></i>
+                    </label>
+                  {% endfor %}
+                </div>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- Delete Selected Button -->
+      <button type="submit" id="deleteButton" style="display:none;" class="btn btn-danger mt-3">Delete Selected</button>
+    </form>
+
+    <!-- Add Book Button -->
+    <form method="POST" action="{{ url_for('add_book') }}">
+      <button type="submit" name="action" value="add" class="btn btn-success mt-3">Add New Book</button>
+    </form>
+
+    <form method="GET" action = "{{url_for('recommend')}}">
+    <button type="submit" name="action" value="add" class="btn btn-dark mt-3">Help me find a new book!</button>
+    </form>
+  </div>
+  </div>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // Show delete button only when any checkbox checked
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const deleteButton = document.getElementById('deleteButton');
+
+    function updateDeleteButtonVisibility() {
+      const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+      deleteButton.style.display = anyChecked ? 'block' : 'none';
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener('change', updateDeleteButtonVisibility));
+    updateDeleteButtonVisibility();
+
+  const searchInput = document.getElementById('bookSearch');
+  searchInput.addEventListener('input', function () {
+    const query = this.value.toLowerCase();
+    const rows = document.querySelectorAll('.book-row');
+
+    rows.forEach(row => {
+      const title = row.dataset.title;
+      const author = row.dataset.author;
+      const matches = title.includes(query) || author.includes(query);
+
+      row.style.display = matches ? '' : 'none';
+    });
+  });
+
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{% include "navbar.html" %}
+<h1>Let's add a book to your library</h1>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul style="color: green; font-weight: bold;">
+      {% for message in messages %}
+        {{ message }}
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+<form method="POST" action="{{ url_for('add_book') }}">
+
+  <label for="title">Title:</label>
+  <input type="text" name="title" required><br>
+
+  <label for="author">Author:</label>
+  <input type="text" name="author" required><br>
+  <label for="status">Status:</label>
+  <select name="status" required>
+    <option value="Want To Read">Want To Read</option>
+    <option value="Currently Reading">Currently Reading</option>
+    <option value="Read">Read</option>
+  </select><br>
+
+  <input type="submit" value="Add Book">
+</form>
+
